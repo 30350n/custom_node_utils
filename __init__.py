@@ -1,6 +1,24 @@
 import bpy
 import nodeitems_utils
 
+def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def):
+    nodes = node_tree.nodes
+    links = node_tree.links
+
+    for name, (node_type, attributes, inputs) in nodes_def.items():
+        node = nodes.new(node_type)
+        node.name = name
+
+        for attribute, value in attributes.items():
+            setattr(node, attribute, value)
+
+        for input_index, value in inputs.items():
+            if isinstance(value, tuple):
+                from_node, output_index = value
+                links.new(nodes[from_node].outputs[output_index], node.inputs[input_index])
+            else:
+                node.inputs[input_index].default_value = value
+
 class CustomNodetreeNodeBase:
     def init_node_tree(self, inputs_def, nodes_def, outputs_def):
         node_tree = bpy.data.node_groups.new(self.__class__.__name__, "ShaderNodeTree")
@@ -15,19 +33,7 @@ class CustomNodetreeNodeBase:
             for attribute, value in attributes.items():
                 setattr(node_tree.inputs[name], attribute, value)
 
-        for name, (node_type, attributes, inputs) in nodes_def.items():
-            node = nodes.new(node_type)
-            node.name = name
-
-            for attribute, value in attributes.items():
-                setattr(node, attribute, value)
-
-            for input_index, value in inputs.items():
-                if isinstance(value, tuple):
-                    from_node, output_index = value
-                    links.new(nodes[from_node].outputs[output_index], node.inputs[input_index])
-                else:
-                    node.inputs[input_index].default_value = value
+        setup_node_tree(node_tree, nodes_def)
 
         node_output = nodes.new("NodeGroupOutput")
         for name, (output_type, attributes, value) in outputs_def.items():
@@ -40,7 +46,7 @@ class CustomNodetreeNodeBase:
                 from_node, output_index = value
                 links.new(nodes[from_node].outputs[output_index], node_output.inputs[name])
             else:
-                node.inputs[input_index].default_value = value
+                node_output.inputs[name].default_value = value
 
         self.node_tree = node_tree
         return self.node_tree
