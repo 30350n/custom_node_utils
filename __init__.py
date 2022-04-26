@@ -58,6 +58,12 @@ class CustomNodetreeNodeBase:
         if not self.node_tree.users > 1:
             bpy.data.node_groups.remove(self.node_tree)
 
+    def draw_buttons(self, context, layout):
+        for prop in self.bl_rna.properties:
+            if prop.is_runtime:
+                text = "" if prop.type == "ENUM" else prop.name
+                layout.prop(self, prop.identifier, text=text)
+
 def register_node_category(identifier, category):
     def draw_node_item(self, context):
         layout = self.layout
