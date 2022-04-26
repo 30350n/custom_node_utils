@@ -55,7 +55,8 @@ class CustomNodetreeNodeBase:
         self.node_tree = node.node_tree.copy()
 
     def free(self):
-        bpy.data.node_groups.remove(self.node_tree)
+        if not self.node_tree.users > 1:
+            bpy.data.node_groups.remove(self.node_tree)
 
 def register_node_category(identifier, category):
     def draw_node_item(self, context):
