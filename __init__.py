@@ -5,13 +5,19 @@ def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def):
     nodes = node_tree.nodes
     links = node_tree.links
 
-    for name, (node_type, attributes, inputs) in nodes_def.items():
+    if not isinstance(nodes_def, dict):
+        raise TypeError(f"nodes_def has type '{type(nodes_def).__name__}', expected 'dict'")
+    for name, (node_type, attrs, inputs) in nodes_def.items():
         node = nodes.new(node_type)
         node.name = name
 
-        for attribute, value in attributes.items():
-            setattr(node, attribute, value)
+        if not isinstance(attrs, dict):
+            raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
+        for attr, value in attrs.items():
+            setattr(node, attr, value)
 
+        if not isinstance(inputs, dict):
+            raise TypeError(f"{inputs} has type '{type(inputs).__name__}', expected 'dict'")
         for input_index, value in inputs.items():
             if isinstance(value, tuple):
                 from_node, output_index = value
