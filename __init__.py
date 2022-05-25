@@ -33,19 +33,23 @@ class CustomNodetreeNodeBase:
 
         node_input = nodes.new("NodeGroupInput")
         node_input.name = "inputs"
-        for name, (input_type, attributes) in inputs_def.items():
+        for name, (input_type, attrs) in inputs_def.items():
             node_tree.inputs.new(input_type, name)
 
-            for attribute, value in attributes.items():
+            if not isinstance(attrs, dict):
+                raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
+            for attribute, value in attrs.items():
                 setattr(node_tree.inputs[name], attribute, value)
 
         setup_node_tree(node_tree, nodes_def)
 
         node_output = nodes.new("NodeGroupOutput")
-        for name, (output_type, attributes, value) in outputs_def.items():
+        for name, (output_type, attrs, value) in outputs_def.items():
             node_tree.outputs.new(output_type, name)
 
-            for attribute, value in attributes.items():
+            if not isinstance(attrs, dict):
+                raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
+            for attribute, value in attrs.items():
                 setattr(node_tree.outputs[name], attribute, value)
 
             if isinstance(value, tuple):
