@@ -70,7 +70,7 @@ class CustomNodetreeNodeBase:
 
     def draw_buttons(self, context, layout):
         for prop in self.bl_rna.properties:
-            if prop.is_runtime:
+            if prop.is_runtime and not prop.is_readonly:
                 text = "" if prop.type == "ENUM" else prop.name
                 layout.prop(self, prop.identifier, text=text)
 
