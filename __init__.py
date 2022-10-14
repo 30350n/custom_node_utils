@@ -20,14 +20,24 @@ def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def):
             raise TypeError(f"{inputs} has type '{type(inputs).__name__}', expected 'dict'")
         for input_index, value in inputs.items():
             if isinstance(value, tuple):
-                from_node, output_index = value
+                try:
+                    from_node, output_index = value
+                except ValueError:
+                    raise ValueError(f"failed to unpack '{value}', expected '(node, index)'")
                 links.new(nodes[from_node].outputs[output_index], node.inputs[input_index])
             else:
                 node.inputs[input_index].default_value = value
 
 class CustomNodetreeNodeBase:
+    shared_node_tree = False
+
     def init_node_tree(self, inputs_def, nodes_def, outputs_def):
-        node_tree = bpy.data.node_groups.new(self.__class__.__name__, "ShaderNodeTree")
+        name = f"CUSTOM_NODE_{self.__class__.__name__}"
+        if self.shared_node_tree and (node_tree := bpy.data.node_groups.get(name)):
+            self.node_tree = node_tree
+            return
+
+        node_tree = bpy.data.node_groups.new(name, "ShaderNodeTree")
         nodes = node_tree.nodes
         links = node_tree.links
 
@@ -44,6 +54,7 @@ class CustomNodetreeNodeBase:
         setup_node_tree(node_tree, nodes_def)
 
         node_output = nodes.new("NodeGroupOutput")
+        node_output.name = "outputs"
         for name, (output_type, attrs, value) in outputs_def.items():
             node_tree.outputs.new(output_type, name)
 
@@ -59,10 +70,9 @@ class CustomNodetreeNodeBase:
                 node_output.inputs[name].default_value = value
 
         self.node_tree = node_tree
-        return self.node_tree
 
     def copy(self, node):
-        self.node_tree = node.node_tree.copy()
+        self.node_tree = node.node_tree if self.shared_node_tree else node.node_tree.copy()
 
     def free(self):
         if not self.node_tree.users > 1:
