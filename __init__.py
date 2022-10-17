@@ -29,14 +29,8 @@ def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def):
                 node.inputs[input_index].default_value = value
 
 class CustomNodetreeNodeBase:
-    shared_node_tree = False
-
     def init_node_tree(self, inputs_def, nodes_def, outputs_def):
         name = f"CUSTOM_NODE_{self.__class__.__name__}"
-        if self.shared_node_tree and (node_tree := bpy.data.node_groups.get(name)):
-            self.node_tree = node_tree
-            return
-
         node_tree = bpy.data.node_groups.new(name, "ShaderNodeTree")
         nodes = node_tree.nodes
         links = node_tree.links
@@ -72,7 +66,7 @@ class CustomNodetreeNodeBase:
         self.node_tree = node_tree
 
     def copy(self, node):
-        self.node_tree = node.node_tree if self.shared_node_tree else node.node_tree.copy()
+        self.node_tree = node.node_tree.copy()
 
     def free(self):
         if not self.node_tree.users > 1:
@@ -83,6 +77,17 @@ class CustomNodetreeNodeBase:
             if prop.is_runtime and not prop.is_readonly:
                 text = "" if prop.type == "ENUM" else prop.name
                 layout.prop(self, prop.identifier, text=text)
+
+class SharedCustomNodetreeNodeBase(CustomNodetreeNodeBase):
+    def init_node_tree(self, inputs_def, nodes_def, outputs_def):
+        name = f"CUSTOM_NODE_{self.__class__.__name__}"
+        if node_tree := bpy.data.node_groups.get(name):
+            self.node_tree = node_tree
+        else:
+            super().init_node_tree(inputs_def, nodes_def, outputs_def)
+
+    def copy(self, node):
+        self.node_tree = node.node_tree
 
 def register_node_category(identifier, category):
     def draw_node_item(self, context):
