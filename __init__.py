@@ -1,7 +1,7 @@
 import bpy
 import nodeitems_utils
 
-def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def):
+def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def, label_nodes=True):
     nodes = node_tree.nodes
     links = node_tree.links
 
@@ -10,7 +10,8 @@ def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def):
     for name, (node_type, attrs, inputs) in nodes_def.items():
         node = nodes.new(node_type)
         node.name = name
-        node.label = " ".join((word.capitalize() for word in name.split("_")))
+        if label_nodes:
+            node.label = " ".join((word.capitalize() for word in name.split("_")))
 
         if not isinstance(attrs, dict):
             raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
