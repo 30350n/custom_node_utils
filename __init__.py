@@ -71,7 +71,7 @@ class CustomNodetreeNodeBase:
         self.node_tree = node.node_tree.copy()
 
     def free(self):
-        if not self.node_tree.users > 1:
+        if self.node_tree.users < 1:
             bpy.data.node_groups.remove(self.node_tree)
 
     def draw_buttons(self, context, layout):
@@ -99,7 +99,7 @@ def register_node_category(identifier, category):
             item.draw(item, col, context)
 
     menu_type = type("NODE_MT_category_" + category.identifier, (bpy.types.Menu,), {
-        "bl_space_type": 'NODE_EDITOR',
+        "bl_space_type": "NODE_EDITOR",
         "bl_label": category.name,
         "category": category,
         "poll": category.poll,
