@@ -48,7 +48,7 @@ class CustomNodetreeNodeBase:
     def get_node_def_hash(cls):
         if cls._node_def_hash is None:
             hash_content = (cls.inputs_def, cls.nodes_def, cls.outputs_def)
-            node_def_json = json.dumps(hash_content, sort_keys=True, default=tuple)
+            node_def_json = json.dumps(hash_content, default=str)
             cls._node_def_hash = hashlib.sha1(node_def_json.encode()).hexdigest()
         return cls._node_def_hash
 
