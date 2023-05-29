@@ -34,6 +34,7 @@ class CustomNodetreeNodeBase:
 
     def copy(self, node):
         self.node_tree = node.node_tree.copy()
+        self.current_hash = node.current_hash
 
     def free(self):
         if self.node_tree.users < 1:
@@ -137,11 +138,13 @@ class SharedCustomNodetreeNodeBase(CustomNodetreeNodeBase):
         name = f"CUSTOM_NODE_{self.__class__.__name__}"
         if not self.node_tree and (node_tree := bpy.data.node_groups.get(name)):
             self.node_tree = node_tree
+            self.current_hash = self.get_node_def_hash()
         else:
             super().init(context)
 
     def copy(self, node):
         self.node_tree = node.node_tree
+        self.current_hash = node.current_hash
 
 @bpy.app.handlers.persistent
 def update_custom_nodes(context):
