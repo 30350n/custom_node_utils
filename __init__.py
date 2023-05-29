@@ -20,6 +20,7 @@ class CustomNodetreeNodeBase:
             node_tree_name = f"CUSTOM_NODE_{cls.__name__}"
             self.node_tree = bpy.data.node_groups.new(node_tree_name, "ShaderNodeTree")
 
+        self.node_tree.nodes.clear()
         CustomNodetreeNodeBase.setup_inputs(self.node_tree, cls.inputs_def)
         CustomNodetreeNodeBase.setup_nodes(self.node_tree, cls.nodes_def)
         CustomNodetreeNodeBase.setup_outputs(self.node_tree, cls.outputs_def)
@@ -62,20 +63,20 @@ class CustomNodetreeNodeBase:
             for attribute, value in attrs.items():
                 setattr(node_tree.inputs[name], attribute, value)
 
+        node_input = node_tree.nodes.new("NodeGroupInput")
+        node_input.name = "inputs"
+
     @staticmethod
     def setup_nodes(node_tree, nodes_def, label_nodes=True):
         nodes = node_tree.nodes
         links = node_tree.links
-
-        nodes.clear()
-        nodes.new("NodeGroupInput").name = "inputs"
-        nodes.new("NodeGroupOutput").name = "outputs"
 
         if not isinstance(nodes_def, dict):
             raise TypeError(f"nodes_def has type '{type(nodes_def).__name__}', expected 'dict'")
         for name, (node_type, attrs, inputs) in nodes_def.items():
             node = nodes.new(node_type)
             node.name = name
+
             if label_nodes:
                 node.label = " ".join((word.capitalize() for word in name.split("_")))
 
@@ -112,16 +113,18 @@ class CustomNodetreeNodeBase:
 
         nodes = node_tree.nodes
         links = node_tree.links
-        node_output = nodes["outputs"]
 
-        for name, (output_type, attrs, value) in outputs_def.items():
+        for name, (output_type, attrs, _) in outputs_def.items():
             node_tree.outputs.new(output_type, name)
-
             if not isinstance(attrs, dict):
                 raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
             for attribute, attribute_value in attrs.items():
                 setattr(node_tree.outputs[name], attribute, attribute_value)
 
+        node_output = nodes.new("NodeGroupOutput")
+        node_output.name = "outputs"
+
+        for name, (_, _, value) in outputs_def.items():
             if not isinstance(value, tuple):
                 node_output.inputs[name].default_value = value
             else:
