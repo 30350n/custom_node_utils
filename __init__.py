@@ -16,14 +16,15 @@ class CustomNodetreeNodeBase:
 
         self.current_hash = self.get_node_def_hash()
 
-        if not self.node_tree:
+        if not (node_tree := self.node_tree):
             node_tree_name = f"CUSTOM_NODE_{cls.__name__}"
-            self.node_tree = bpy.data.node_groups.new(node_tree_name, "ShaderNodeTree")
+            node_tree = bpy.data.node_groups.new(node_tree_name, "ShaderNodeTree")
 
-        self.node_tree.nodes.clear()
-        CustomNodetreeNodeBase.setup_inputs(self.node_tree, cls.inputs_def)
-        CustomNodetreeNodeBase.setup_nodes(self.node_tree, cls.nodes_def)
-        CustomNodetreeNodeBase.setup_outputs(self.node_tree, cls.outputs_def)
+        node_tree.nodes.clear()
+        CustomNodetreeNodeBase.setup_inputs(node_tree, cls.inputs_def)
+        CustomNodetreeNodeBase.setup_nodes(node_tree, cls.nodes_def)
+        CustomNodetreeNodeBase.setup_outputs(node_tree, cls.outputs_def)
+        self.node_tree = node_tree
 
     def update_custom_node(self):
         if self.current_hash == self.get_node_def_hash():
