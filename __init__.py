@@ -25,6 +25,10 @@ class CustomNodetreeNodeBase:
         CustomNodetreeNodeBase.setup_nodes(node_tree, cls.nodes_def)
         CustomNodetreeNodeBase.setup_outputs(node_tree, cls.outputs_def)
         self.node_tree = node_tree
+        self.update_custom_node()
+
+    def update_custom_node(self):
+        self.update()
 
     def _upgrade_custom_node(self):
         if self.current_hash == self.get_node_def_hash():
@@ -35,6 +39,7 @@ class CustomNodetreeNodeBase:
     def copy(self, node):
         self.node_tree = node.node_tree.copy()
         self.current_hash = node.current_hash
+        self.update_custom_node()
 
     def free(self):
         if self.node_tree.users < 1:
@@ -139,12 +144,14 @@ class SharedCustomNodetreeNodeBase(CustomNodetreeNodeBase):
         if not self.node_tree and (node_tree := bpy.data.node_groups.get(name)):
             self.node_tree = node_tree
             self.current_hash = self.get_node_def_hash()
+            self.update_custom_node()
         else:
             super().init(context)
 
     def copy(self, node):
         self.node_tree = node.node_tree
         self.current_hash = node.current_hash
+        self.update_custom_node()
 
 @bpy.app.handlers.persistent
 def upgrade_custom_nodes(context):
