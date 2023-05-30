@@ -26,7 +26,7 @@ class CustomNodetreeNodeBase:
         CustomNodetreeNodeBase.setup_outputs(node_tree, cls.outputs_def)
         self.node_tree = node_tree
 
-    def update_custom_node(self):
+    def _upgrade_custom_node(self):
         if self.current_hash == self.get_node_def_hash():
             return
         print(f"{COLOR_INFO}[custom_node_utils] updating '{self.node_tree.name}'{COLOR_END}")
@@ -147,11 +147,11 @@ class SharedCustomNodetreeNodeBase(CustomNodetreeNodeBase):
         self.current_hash = node.current_hash
 
 @bpy.app.handlers.persistent
-def update_custom_nodes(context):
+def upgrade_custom_nodes(context):
     for node_tree in (mat.node_tree for mat in bpy.data.materials if mat.use_nodes):
         for node in node_tree.nodes:
             if isinstance(node, CustomNodetreeNodeBase):
-                node.update_custom_node()
+                node._upgrade_custom_node()
 
 def register_node_category(identifier, category):
     def draw_node_item(self, context):
@@ -173,7 +173,7 @@ def register_node_category(identifier, category):
     nodeitems_utils._node_categories[identifier][0].append(category)
     nodeitems_utils._node_categories[identifier][2].append(menu_type)
 
-    bpy.app.handlers.load_post.append(update_custom_nodes)
+    bpy.app.handlers.load_post.append(upgrade_custom_nodes)
 
 def unregister_node_category(identifier, category):
     categories = nodeitems_utils._node_categories[identifier][0]
@@ -185,7 +185,7 @@ def unregister_node_category(identifier, category):
     categories.remove(category)
     menu_types.remove(menu_type)
 
-    bpy.app.handlers.load_post.remove(update_custom_nodes)
+    bpy.app.handlers.load_post.remove(upgrade_custom_nodes)
 
 COLOR_INFO = "\033[96m"
 COLOR_END = "\033[0m"
