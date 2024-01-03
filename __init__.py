@@ -36,28 +36,31 @@ class CustomNodetreeNodeBase:
         node_tree = bpy.data.node_groups.new(name, "ShaderNodeTree")
         nodes = node_tree.nodes
         links = node_tree.links
+        interface = node_tree.interface
 
-        node_input = nodes.new("NodeGroupInput")
-        node_input.name = "inputs"
-        for name, (input_type, attrs) in inputs_def.items():
-            node_tree.inputs.new(input_type, name)
+        for name, (socket_type, attrs) in inputs_def.items():
+            socket = interface.new_socket(name, in_out="INPUT", socket_type=socket_type)
 
             if not isinstance(attrs, dict):
                 raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
             for attribute, value in attrs.items():
-                setattr(node_tree.inputs[name], attribute, value)
+                setattr(socket, attribute, value)
+
+        node_input = nodes.new("NodeGroupInput")
+        node_input.name = "inputs"
 
         setup_node_tree(node_tree, nodes_def)
 
         node_output = nodes.new("NodeGroupOutput")
         node_output.name = "outputs"
-        for name, (output_type, attrs, value) in outputs_def.items():
-            node_tree.outputs.new(output_type, name)
+
+        for name, (socket_type, attrs, value) in outputs_def.items():
+            socket = interface.new_socket(name, in_out="OUTPUT", socket_type=socket_type)
 
             if not isinstance(attrs, dict):
                 raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
             for attribute, value in attrs.items():
-                setattr(node_tree.outputs[name], attribute, value)
+                setattr(socket, attribute, value)
 
             if isinstance(value, tuple):
                 from_node, output_index = value
