@@ -90,33 +90,3 @@ class SharedCustomNodetreeNodeBase(CustomNodetreeNodeBase):
 
     def copy(self, node):
         self.node_tree = node.node_tree
-
-def register_node_category(identifier, category):
-    def draw_node_item(self, context):
-        layout = self.layout
-        col = layout.column(align=True)
-        for item in self.category.items(context):
-            item.draw(item, col, context)
-
-    menu_type = type("NODE_MT_category_" + category.identifier, (bpy.types.Menu,), {
-        "bl_space_type": "NODE_EDITOR",
-        "bl_label": category.name,
-        "category": category,
-        "poll": category.poll,
-        "draw": draw_node_item,
-    })
-
-    bpy.utils.register_class(menu_type)
-
-    nodeitems_utils._node_categories[identifier][0].append(category)
-    nodeitems_utils._node_categories[identifier][2].append(menu_type)
-
-def unregister_node_category(identifier, category):
-    categories = nodeitems_utils._node_categories[identifier][0]
-    menu_types = nodeitems_utils._node_categories[identifier][2]
-
-    menu_type = menu_types[categories.index(category)]
-    bpy.utils.unregister_class(menu_type)
-
-    categories.remove(category)
-    menu_types.remove(menu_type)
