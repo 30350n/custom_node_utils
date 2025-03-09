@@ -1,7 +1,16 @@
-import bpy
-import nodeitems_utils
+from typing import Any, Self
 
-def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def, label_nodes=True):
+import bpy
+from mathutils import Vector
+
+AttrsDict = dict[str, Any]
+IOValue = float | int | str | Vector | tuple[str, int | str]
+InputsDef = dict[str, tuple[str, AttrsDict]]
+NodesDef = dict[str, tuple[str, AttrsDict, dict[int | str, IOValue]]]
+OutputsDef = dict[str, tuple[str, AttrsDict, IOValue]]
+
+
+def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def: NodesDef, label_nodes: bool = True):
     nodes = node_tree.nodes
     links = node_tree.links
 
@@ -28,15 +37,17 @@ def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def, label_nodes=True):
                     raise ValueError(f"failed to unpack '{value}', expected '(node, index)'")
                 links.new(nodes[from_node].outputs[output_index], node.inputs[input_index])
             else:
-                node.inputs[input_index].default_value = value
+                node.inputs[input_index].default_value = value  # pyright: ignore[reportAttributeAccessIssue]
 
-class CustomNodetreeNodeBase:
-    def init_node_tree(self, inputs_def, nodes_def, outputs_def):
+
+class CustomNodetreeNodeBase(bpy.types.ShaderNodeCustomGroup):
+    def init_node_tree(self, inputs_def: InputsDef, nodes_def: NodesDef, outputs_def: OutputsDef):
         name = f"CUSTOM_NODE_{self.__class__.__name__}"
         node_tree = bpy.data.node_groups.new(name, "ShaderNodeTree")
         nodes = node_tree.nodes
         links = node_tree.links
         interface = node_tree.interface
+        assert interface
 
         for name, (socket_type, attrs) in inputs_def.items():
             socket = interface.new_socket(name, in_out="INPUT", socket_type=socket_type)
@@ -54,7 +65,7 @@ class CustomNodetreeNodeBase:
         node_output = nodes.new("NodeGroupOutput")
         node_output.name = "outputs"
 
-        for name, (socket_type, attrs, value) in outputs_def.items():
+        for name, (socket_type, attrs, output_value) in outputs_def.items():
             socket = interface.new_socket(name, in_out="OUTPUT", socket_type=socket_type)
 
             if not isinstance(attrs, dict):
@@ -62,34 +73,39 @@ class CustomNodetreeNodeBase:
             for attribute, value in attrs.items():
                 setattr(socket, attribute, value)
 
-            if isinstance(value, tuple):
-                from_node, output_index = value
+            if isinstance(output_value, tuple):
+                from_node, output_index = output_value
                 links.new(nodes[from_node].outputs[output_index], node_output.inputs[name])
             else:
-                node_output.inputs[name].default_value = value
+                node_output.inputs[name].default_value = output_value  # pyright: ignore[reportAttributeAccessIssue]
 
         self.node_tree = node_tree
 
-    def copy(self, node):
-        self.node_tree = node.node_tree.copy()
+    def copy(self, node: Self):
+        if node.node_tree is None:
+            self.node_tree = None
+        else:
+            self.node_tree = node.node_tree.copy()
 
     def free(self):
-        if self.node_tree.users < 1:
+        if self.node_tree and self.node_tree.users < 1:
             bpy.data.node_groups.remove(self.node_tree)
 
-    def draw_buttons(self, context, layout):
+    def draw_buttons(self, context: bpy.types.Context, layout: bpy.types.UILayout):
         for prop in self.bl_rna.properties:
             if prop.is_runtime and not prop.is_readonly:
                 text = "" if prop.type == "ENUM" else prop.name
                 layout.prop(self, prop.identifier, text=text)
 
+
 class SharedCustomNodetreeNodeBase(CustomNodetreeNodeBase):
-    def init_node_tree(self, inputs_def, nodes_def, outputs_def):
+    def init_node_tree(self, inputs_def: InputsDef, nodes_def: NodesDef, outputs_def: OutputsDef):
         name = f"CUSTOM_NODE_{self.__class__.__name__}"
         if node_tree := bpy.data.node_groups.get(name):
+            assert isinstance(node_tree, bpy.types.ShaderNodeTree)
             self.node_tree = node_tree
         else:
             super().init_node_tree(inputs_def, nodes_def, outputs_def)
 
-    def copy(self, node):
+    def copy(self, node: Self):
         self.node_tree = node.node_tree
