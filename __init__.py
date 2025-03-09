@@ -1,7 +1,14 @@
-import bpy
-import nodeitems_utils
+from typing import Any
 
-def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def, label_nodes=True):
+import bpy
+
+AttrsDict = dict[str, Any]
+InputsDef = dict[str, tuple[str, AttrsDict]]
+NodesDef = dict[str, tuple[str, AttrsDict, AttrsDict]]
+OutputsDef = dict[str, tuple[str, AttrsDict, Any]]
+
+
+def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def: NodesDef, label_nodes=True):
     nodes = node_tree.nodes
     links = node_tree.links
 
@@ -28,15 +35,17 @@ def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def, label_nodes=True):
                     raise ValueError(f"failed to unpack '{value}', expected '(node, index)'")
                 links.new(nodes[from_node].outputs[output_index], node.inputs[input_index])
             else:
-                node.inputs[input_index].default_value = value
+                node.inputs[input_index].default_value = value  # pyright: ignore
 
-class CustomNodetreeNodeBase:
-    def init_node_tree(self, inputs_def, nodes_def, outputs_def):
+
+class CustomNodetreeNodeBase(bpy.types.ShaderNodeCustomGroup):
+    def init_node_tree(self, inputs_def: InputsDef, nodes_def: NodesDef, outputs_def: OutputsDef):
         name = f"CUSTOM_NODE_{self.__class__.__name__}"
-        node_tree = bpy.data.node_groups.new(name, "ShaderNodeTree")
+        node_tree = bpy.data.node_groups.new(name, "ShaderNodeTree")  # pyright: ignore
         nodes = node_tree.nodes
         links = node_tree.links
         interface = node_tree.interface
+        assert interface
 
         for name, (socket_type, attrs) in inputs_def.items():
             socket = interface.new_socket(name, in_out="INPUT", socket_type=socket_type)
@@ -66,15 +75,15 @@ class CustomNodetreeNodeBase:
                 from_node, output_index = value
                 links.new(nodes[from_node].outputs[output_index], node_output.inputs[name])
             else:
-                node_output.inputs[name].default_value = value
+                node_output.inputs[name].default_value = value  # pyright: ignore
 
-        self.node_tree = node_tree
+        self.node_tree = node_tree  # pyright: ignore
 
     def copy(self, node):
         self.node_tree = node.node_tree.copy()
 
     def free(self):
-        if self.node_tree.users < 1:
+        if self.node_tree and self.node_tree.users < 1:
             bpy.data.node_groups.remove(self.node_tree)
 
     def draw_buttons(self, context, layout):
@@ -83,11 +92,12 @@ class CustomNodetreeNodeBase:
                 text = "" if prop.type == "ENUM" else prop.name
                 layout.prop(self, prop.identifier, text=text)
 
+
 class SharedCustomNodetreeNodeBase(CustomNodetreeNodeBase):
     def init_node_tree(self, inputs_def, nodes_def, outputs_def):
         name = f"CUSTOM_NODE_{self.__class__.__name__}"
         if node_tree := bpy.data.node_groups.get(name):
-            self.node_tree = node_tree
+            self.node_tree = node_tree  # pyright: ignore
         else:
             super().init_node_tree(inputs_def, nodes_def, outputs_def)
 
