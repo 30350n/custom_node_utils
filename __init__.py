@@ -14,21 +14,18 @@ def setup_node_tree(node_tree: bpy.types.NodeTree, nodes_def: NodesDef, label_no
     nodes = node_tree.nodes
     links = node_tree.links
 
-    if not isinstance(nodes_def, dict):
-        raise TypeError(f"nodes_def has type '{type(nodes_def).__name__}', expected 'dict'")
+    _check_type(nodes_def, dict)
     for name, (node_type, attrs, inputs) in nodes_def.items():
         node = nodes.new(node_type)
         node.name = name
         if label_nodes:
             node.label = " ".join((word.capitalize() for word in name.split("_")))
 
-        if not isinstance(attrs, dict):
-            raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
+        _check_type(attrs, dict)
         for attr, value in attrs.items():
             setattr(node, attr, value)
 
-        if not isinstance(inputs, dict):
-            raise TypeError(f"{inputs} has type '{type(inputs).__name__}', expected 'dict'")
+        _check_type(inputs, dict)
         for input_index, value in inputs.items():
             if isinstance(value, tuple):
                 try:
@@ -52,8 +49,7 @@ class CustomNodetreeNodeBase(bpy.types.ShaderNodeCustomGroup):
         for name, (socket_type, attrs) in inputs_def.items():
             socket = interface.new_socket(name, in_out="INPUT", socket_type=socket_type)
 
-            if not isinstance(attrs, dict):
-                raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
+            _check_type(attrs, dict)
             for attribute, value in attrs.items():
                 setattr(socket, attribute, value)
 
@@ -68,8 +64,7 @@ class CustomNodetreeNodeBase(bpy.types.ShaderNodeCustomGroup):
         for name, (socket_type, attrs, output_value) in outputs_def.items():
             socket = interface.new_socket(name, in_out="OUTPUT", socket_type=socket_type)
 
-            if not isinstance(attrs, dict):
-                raise TypeError(f"{attrs} has type '{type(attrs).__name__}', expected 'dict'")
+            _check_type(attrs, dict)
             for attribute, value in attrs.items():
                 setattr(socket, attribute, value)
 
@@ -96,6 +91,11 @@ class CustomNodetreeNodeBase(bpy.types.ShaderNodeCustomGroup):
             if prop.is_runtime and not prop.is_readonly:
                 text = "" if prop.type == "ENUM" else prop.name
                 layout.prop(self, prop.identifier, text=text)
+
+
+def _check_type(value: Any, expected_type: type):
+    if not isinstance(value, expected_type):
+        raise TypeError(f"{value} has type '{type(value).__name__}', expected '{type.__name__}'")
 
 
 class SharedCustomNodetreeNodeBase(CustomNodetreeNodeBase):
