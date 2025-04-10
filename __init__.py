@@ -1,4 +1,4 @@
-from typing import Any, Self
+from typing import Any, Self, cast
 
 import bpy
 from mathutils import Vector
@@ -76,7 +76,8 @@ class CustomNodetreeNodeBase(bpy.types.ShaderNodeCustomGroup):
 
         self.node_tree = node_tree
 
-    def copy(self, node: Self):
+    def copy(self, node: bpy.types.Node):
+        node = cast(Self, node)
         if node.node_tree is None:
             self.node_tree = None
         else:
@@ -107,5 +108,5 @@ class SharedCustomNodetreeNodeBase(CustomNodetreeNodeBase):
         else:
             super().init_node_tree(inputs_def, nodes_def, outputs_def)
 
-    def copy(self, node: Self):
-        self.node_tree = node.node_tree
+    def copy(self, node: bpy.types.Node):
+        self.node_tree = cast(Self, node).node_tree
